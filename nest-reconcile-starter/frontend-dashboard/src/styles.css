@@ -1,0 +1,13 @@
+body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #0b1020; color: #e6eefc; }
+header { background: #111934; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+a { color: #90caf9; text-decoration: none; margin-right: 12px; }
+.container { padding: 16px 24px; }
+.card { background: #131a36; padding: 16px; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.3); margin-bottom: 16px; }
+.btn { background: #1976d2; border: 0; color: white; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { text-align: left; padding: 8px; border-bottom: 1px solid #223; }
+.badge { padding: 2px 8px; border-radius: 12px; background: #263a63; }
+h1, h2, h3 { margin-top: 0; }
+input, select { background: #0f1630; color: #e6eefc; border: 1px solid #223; border-radius: 8px; padding: 6px 8px; }
+form .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
