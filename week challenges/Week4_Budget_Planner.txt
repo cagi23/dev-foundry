@@ -1,0 +1,10 @@
+WEEK 4 — Budget Planner & Alerts
+Goal: Add budgeting and alert notifications.
+Key Requirements:
+- Backend budget CRUD + alert scheduling.
+- Mock email alerts and incident logging.
+AI-Resistant Constraints:
+- Non-linear budget rules (weekend multiplier).
+- Manual threshold tuning explanation.
+- Custom backpressure logic for alerts queue.
+Deliverables: Working budget planner, false-positive strategy document.

@@ -1,0 +1,9 @@
+WEEK 6 — Multi-Currency & Exchange Rates
+Goal: Add currency conversion and caching.
+Key Requirements:
+- Integrate mock FX API, store converted values, refresh daily.
+AI-Resistant Constraints:
+- Handle rounding discrepancies manually.
+- Design caching TTL policy.
+- Test weekend rate freeze.
+Deliverables: Conversion module, FX caching logic, comparison chart.

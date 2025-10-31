@@ -1,0 +1,10 @@
+WEEK 5 — Aggregated Analytics Microservice
+Goal: Asynchronous analytics engine for spending trends.
+Key Requirements:
+- Separate microservice with Kafka/RabbitMQ.
+- Endpoints for monthly summary and category spend.
+AI-Resistant Constraints:
+- Custom event schema (no auto DTOs).
+- Handle partial failure and implement DLQ.
+- Temporal consistency checks and metrics endpoint.
+Deliverables: Analytics service + message flow diagram.

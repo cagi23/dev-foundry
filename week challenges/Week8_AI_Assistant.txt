@@ -1,0 +1,10 @@
+WEEK 8 — AI Financial Assistant
+Goal: Chat-based assistant to answer user finance questions.
+Key Requirements:
+- Rule-based NLP parser and chat UI.
+- Connect to previous analytics endpoints.
+AI-Resistant Constraints:
+- No LLMs or external AI APIs.
+- Manual language-to-SQL parser design.
+- Context memory implementation and disambiguation handling.
+Deliverables: Chat interface, parser design doc, test queries.

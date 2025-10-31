@@ -1,0 +1,10 @@
+WEEK 7 — Fraud Detection / Anomaly Alerts
+Goal: ML-based fraud alerting microservice.
+Key Requirements:
+- Python Flask + IsolationForest or heuristic.
+- Integrate with alerts system.
+AI-Resistant Constraints:
+- Manually create mock datasets.
+- Implement sliding window detection logic.
+- Analyze false positives and tuning trade-offs.
+Deliverables: Fraud service, Jupyter notebook, metrics report.

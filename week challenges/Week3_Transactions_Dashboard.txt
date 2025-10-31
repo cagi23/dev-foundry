@@ -1,0 +1,10 @@
+WEEK 3 — Transaction Dashboard & Categorization
+Goal: Build dashboard with categorized transactions.
+Key Requirements:
+- Rule-based transaction categorization engine.
+- Chart.js dashboard with filters and manual category override.
+AI-Resistant Constraints:
+- Must create categorization rules manually.
+- Implement adaptive override logic (user learns from history).
+- Manual explanation of failed rules in README.
+Deliverables: Dashboard, rule engine, report on rule accuracy.

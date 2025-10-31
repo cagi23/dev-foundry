@@ -1,0 +1,11 @@
+WEEK 1 — PSD2-Style Bank Sync Microservice
+Goal: Connect to a mock PSD2/Open Banking API and persist user financial data.
+Key Requirements:
+- Build backend microservice in Spring Boot.
+- Fetch transactions from mock APIs and normalize schema.
+- Implement OAuth2 protection and scheduled sync.
+AI-Resistant Constraints:
+- Design mock bank API manually.
+- Handle schema normalization and pagination.
+- Write manual Postman tests and migration scripts.
+Deliverables: Swagger UI, Docker Compose, normalization report.

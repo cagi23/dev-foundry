@@ -1,0 +1,10 @@
+WEEK 2 — User Management & Account Linking
+Goal: Add user registration and link multiple banks to one profile.
+Key Requirements:
+- Auth with JWT.
+- Bank linking endpoints and Angular UI for signup/link.
+AI-Resistant Constraints:
+- Custom password entropy validator.
+- Secret vaulting simulation for bank tokens.
+- Manual OAuth flow diagram.
+Deliverables: Integrated auth flow, sequence diagram, QA checklist.
