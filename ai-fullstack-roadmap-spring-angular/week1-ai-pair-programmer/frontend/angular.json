@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/angular-cli.json",
+  "version": 1,
+  "defaultProject": "user-dashboard",
+  "projects": {
+    "user-dashboard": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/user-dashboard",
+            "index": "src/index.html",
+            "main": "src/main.ts",
+            "polyfills": [],
+            "tsConfig": "tsconfig.app.json"
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "user-dashboard:build"
+          }
+        }
+      }
+    }
+  }
+}

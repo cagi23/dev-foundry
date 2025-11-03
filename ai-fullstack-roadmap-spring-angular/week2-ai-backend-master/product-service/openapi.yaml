@@ -1,0 +1,40 @@
+openapi: 3.0.1
+info:
+  title: Product Service API
+  version: 1.0.0
+paths:
+  /api/products:
+    get:
+      summary: List products
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '201':
+          description: Created
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
