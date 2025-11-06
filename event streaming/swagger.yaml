@@ -1,0 +1,1412 @@
+openapi: 3.0.1
+info:
+  title: 'Pioneer Event Streaming: Data ingestion tool API'
+  description: 'Backend REST API for the Pioneer Event Streaming: Data ingestion tool'
+  version: v1
+servers:
+  - url: 'https://{domain}:{port}/api/v{version}'
+    description: Local Development
+    variables:
+      domain:
+        default: localhost
+      port:
+        default: '8080'
+        enum:
+          - '443'
+          - '8443'
+          - '8080'
+      version:
+        default: '1'
+        description: The API version number
+paths:
+  '/connectors/{connectorName}':
+    delete:
+      tags:
+        - Connector
+      summary: Deletes source connector with the given name.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Delete source connector using following Kafka Connect REST API - https://docs.confluent.io/platform/current/connect/references/restapi.html#delete--connectors-(string-name)- </p>"
+      parameters:
+        - name: connectorName
+          in: path
+          description: The source connector name.
+          required: true
+          schema:
+            type: string
+            description: The source connector name.
+            nullable: true
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+    get:
+      tags:
+        - Connector
+      summary: Retrieves source connector with the given name.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Retrieve source connector details (including connector class name) by name from following Kafka Connect REST API - https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name) </p>\r\n<p>Use following Kafka Connect REST API to get connector status - https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)-status</p>\r\n<p>Map the Kafka Connect REST API response to response model of this API.</p>"
+      parameters:
+        - name: connectorName
+          in: path
+          description: The source connector name.
+          required: true
+          schema:
+            type: string
+            description: The source connector name.
+            nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorDetailsModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  /connectors:
+    get:
+      tags:
+        - Connector
+      summary: Searches source connectors matching given criteria parameters.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>All string fields will be matched using 'Contains' comparison. All non-null criterias should be AND-ed.</p>\r\n<p>Default and maximum 'limit' should be configurable in backend config.</p>\r\n<p>Use following Kafka Connect REST API to get connector status - https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)-status</p>\r\n<p>\r\n  <i>Note:</i> Valid list of 'sortBy' values will be defined during backend/integration development.</p>\r\n<p>\r\n  <i>Note:</i>\r\n            The status retrieval might require multiple additional Kafka API calls.\r\n            This shouldn't affect much overall performance.\r\n            But if it issue, the status retrieval feature can be removed from this API.\r\n            So, the final decision to be made during development phase.</p>"
+      parameters:
+        - name: name
+          in: query
+          description: The connector name criteria.
+          schema:
+            type: string
+            description: The connector name criteria.
+            nullable: true
+        - name: status
+          in: query
+          description: The connector status criteria.
+          schema:
+            $ref: '#/components/schemas/ConnectorStatus'
+        - name: sortBy
+          in: query
+          description: The name of the field to sort by.
+          schema:
+            type: string
+            description: The name of the field to sort by.
+            default: name
+            nullable: true
+        - name: sortOrder
+          in: query
+          description: The sort order.
+          schema:
+            $ref: '#/components/schemas/SortOrder'
+        - name: offset
+          in: query
+          description: The offset.
+          schema:
+            type: integer
+            description: The offset.
+            format: int32
+            default: 0
+            nullable: true
+        - name: limit
+          in: query
+          description: The limit.
+          schema:
+            type: integer
+            description: The limit.
+            format: int32
+            default: 20
+            nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorSummaryModelSearchResult'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+    post:
+      tags:
+        - Connector
+      summary: Creates new source connector.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Perform basic validation on backend, like checking for required config fields, etc.</p>\r\n<p>Use Kafka Connect plugin config validation REST API to validate connector config - https://docs.confluent.io/platform/current/connect/references/restapi.html#put--connector-plugins-(string-name)-config-validate</p>\r\n<p>Use following Kafka Connect REST API to create connector - https://docs.confluent.io/platform/current/connect/references/restapi.html#post--connectors</p>\r\n<p>Use following Kafka Connect REST API to get created connector status - https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)-status</p>\r\n<p>Map the Kafka Connect REST API response to response model of this API.</p>\r\n<p>\r\n  <i>Note:</i> Simple message transfromations can be added as part of the configuration, for more details check - https://kafka.apache.org/documentation.html#connect_transforms.</p>"
+      requestBody:
+        description: The source connector name and configuration details.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorCreateModel'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorCreateModel'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ConnectorCreateModel'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorDetailsModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  '/connectors/{connectorName}/config':
+    put:
+      tags:
+        - Connector
+      summary: Updates source connector configuration.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Perform basic validation on backend, like checking for required config fields, etc.</p>\r\n<p>Retrieve source connector details (including connector class name) by name from following Kafka Connect REST API - https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)</p>\r\n<p>Use Kafka Connect plugin config validation REST API to validate connector config - https://docs.confluent.io/5.5.0/connect/references/restapi.html#put--connector-plugins-(string-name)-config-validate</p>\r\n<p>Use following Kafka Connect REST API to create connector - https://docs.confluent.io/platform/current/connect/references/restapi.html#post--connectors</p>\r\n<p>Map the Kafka Connect REST API response to response model of this API.</p>\r\n<p>\r\n  <i>Note:</i> Under the hood, if update is not possible, the connector should be re-created</p>\r\n<p>\r\n  <i>Note:</i> Simple message transfromations can be added as part of the configuration, for more details check - https://kafka.apache.org/documentation.html#connect_transforms.</p>"
+      parameters:
+        - name: connectorName
+          in: path
+          description: The source connector name.
+          required: true
+          schema:
+            type: string
+            description: The source connector name.
+            nullable: true
+      requestBody:
+        description: The source connector configuration.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorConfigModel'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorConfigModel'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ConnectorConfigModel'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorDetailsModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  /connectorPlugins:
+    get:
+      tags:
+        - ConnectorPlugin
+      summary: Searches available source connector plugins matching given criteria parameters.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>All string fields will be matched using 'Contains' comparison. All non-null criterias should be AND-ed.</p>\r\n<p>Default and maximum 'limit' should be configurable in backend config.</p>\r\n<p>Use following Kafka Connect REST API to perform this request - https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connector-plugins-</p>\r\n<p>The filtering by 'className' and sorting/paging should be done on backend API.</p>\r\n<p>\r\n  <i>Note:</i> Normally, it won't require paging, because list of connectors shouldn't be big, unless there are lots of custom connectors.</p>"
+      parameters:
+        - name: className
+          in: query
+          description: The connector class name criteria.
+          schema:
+            type: string
+            description: The connector class name criteria.
+            nullable: true
+        - name: sortOrder
+          in: query
+          description: The sort order.
+          schema:
+            $ref: '#/components/schemas/SortOrder'
+        - name: offset
+          in: query
+          description: The offset.
+          schema:
+            type: integer
+            description: The offset.
+            format: int32
+            default: 0
+            nullable: true
+        - name: limit
+          in: query
+          description: The limit.
+          schema:
+            type: integer
+            description: The limit.
+            format: int32
+            default: 20
+            nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringIListSearchResult'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  '/connectorPlugins/{className}/config/validate':
+    put:
+      tags:
+        - ConnectorPlugin
+      summary: Validates source connector configuration.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following Kafka Connect REST API to perform this request - https://docs.confluent.io/platform/current/connect/references/restapi.html#put--connector-plugins-(string-name)-config-validate</p>\r\n<p>Map the Kafka Connect REST API response to response model of this API.</p>\r\n<p>\r\n  <i>Note:</i>Final structure of the response may be decided during backend/integration development.</p>"
+      parameters:
+        - name: className
+          in: path
+          description: The name of the connector class to validate.
+          required: true
+          schema:
+            type: string
+            description: The name of the connector class to validate.
+            nullable: true
+      requestBody:
+        description: 'The connector configuration object, represented as key-value map.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorConfigModel'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorConfigModel'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ConnectorConfigModel'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginValidationResultModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  '/connectorTemplates/{id}':
+    delete:
+      tags:
+        - ConnectorTemplate
+      summary: Deletes source connector template with the given Id.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>\r\n            Simply delete record from corresponding table.\r\n            </p>"
+      parameters:
+        - name: id
+          in: path
+          description: The source connector template Id.
+          required: true
+          schema:
+            type: integer
+            description: The source connector template Id.
+            format: int64
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+    get:
+      tags:
+        - ConnectorTemplate
+      summary: Retrieves source connector template with the given Id.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>\r\n            Simply retrieve record from corresponding table.\r\n            </p>"
+      parameters:
+        - name: id
+          in: path
+          description: The source connector template Id.
+          required: true
+          schema:
+            type: integer
+            description: The source connector template Id.
+            format: int64
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorTemplateModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+    put:
+      tags:
+        - ConnectorTemplate
+      summary: Updates source connector template with the given Id.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>\r\n            Simply update existing record in corresponding table.\r\n            </p>"
+      parameters:
+        - name: id
+          in: path
+          description: The source connector template Id.
+          required: true
+          schema:
+            type: integer
+            description: The source connector template Id.
+            format: int64
+      requestBody:
+        description: The source connector template model.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorTemplateCreateModel'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorTemplateCreateModel'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ConnectorTemplateCreateModel'
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  /connectorTemplates:
+    get:
+      tags:
+        - ConnectorTemplate
+      summary: Searches source connector templates matching given criteria parameters.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>All string fields will be matched using 'Contains' comparison. All non-null criterias should be AND-ed.</p>\r\n<p>Default and maximum 'limit' should be configurable in backend config.</p>\r\n<p>The 'connectorClassName' should be matched against template's config property with name 'connector.class'.</p>"
+      parameters:
+        - name: title
+          in: query
+          description: The template title criteria.
+          schema:
+            type: string
+            description: The template title criteria.
+            nullable: true
+        - name: connectorClassName
+          in: query
+          description: The connector class name criteria.
+          schema:
+            type: string
+            description: The connector class name criteria.
+            nullable: true
+        - name: sortBy
+          in: query
+          description: The name of the field to sort by.
+          schema:
+            type: string
+            description: The name of the field to sort by.
+            default: Id
+            nullable: true
+        - name: sortOrder
+          in: query
+          description: The sort order.
+          schema:
+            $ref: '#/components/schemas/SortOrder'
+        - name: offset
+          in: query
+          description: The offset.
+          schema:
+            type: integer
+            description: The offset.
+            format: int32
+            default: 0
+            nullable: true
+        - name: limit
+          in: query
+          description: The limit.
+          schema:
+            type: integer
+            description: The limit.
+            format: int32
+            default: 20
+            nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorTemplateSearchItemModelSearchResult'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+    post:
+      tags:
+        - ConnectorTemplate
+      summary: Creates new source connector template.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>\r\n            Simply create new record in corresponding table.\r\n            </p>"
+      requestBody:
+        description: The source connector template details.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorTemplateCreateModel'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorTemplateCreateModel'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ConnectorTemplateCreateModel'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedItemModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  '/dataProcessing/streams/{name}':
+    delete:
+      tags:
+        - DataProcessing
+      summary: Deletes the Stream with the given name.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following KSQL Statement to delete Stream by it's name - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/drop-stream</p>\r\n<p>KSQL REST API reference for executing statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>"
+      parameters:
+        - name: name
+          in: path
+          description: The Stream name.
+          required: true
+          schema:
+            type: string
+            description: The Stream name.
+            nullable: true
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  '/dataProcessing/tables/{name}':
+    delete:
+      tags:
+        - DataProcessing
+      summary: Deletes the Table with the given name.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following KSQL Statement to delete Table by it's name - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/drop-table</p>\r\n<p>KSQL REST API reference for executing statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>"
+      parameters:
+        - name: name
+          in: path
+          description: The Table name.
+          required: true
+          schema:
+            type: string
+            description: The Table name.
+            nullable: true
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  /dataProcessing/topics:
+    get:
+      tags:
+        - DataProcessing
+      summary: Retrieves all topics.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following KSQL Statement to retrieve all Topics - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/show-topics/</p>\r\n<p>KSQL REST API reference for executing statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>\r\n<p>Convert KSQL response to current API's response format and return result.</p>"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  /dataProcessing/streams:
+    get:
+      tags:
+        - DataProcessing
+      summary: Retrieves all Streams.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following KSQL Statement to retrieve all Streams - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/show-streams</p>\r\n<p>KSQL REST API reference for executing statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>\r\n<p>Convert KSQL response to current API's response format and return result.</p>"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StreamDetailsModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  '/dataProcessing/streams/{name}/schema':
+    get:
+      tags:
+        - DataProcessing
+      summary: Get the schema of the Stream with the given name.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following KSQL Statement to get Stream structure by it's name - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/describe</p>\r\n<p>KSQL REST API reference for executing statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>\r\n<p>Convert KSQL response to current API's response format and return result.</p>"
+      parameters:
+        - name: name
+          in: path
+          description: The Stream name.
+          required: true
+          schema:
+            type: string
+            description: The Stream name.
+            nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FieldDescriptionModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  '/dataProcessing/streams/{name}/stats':
+    get:
+      tags:
+        - DataProcessing
+      summary: Get the statistics of the Stream with the given name.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following KSQL Statement to get Stream statistics by it's name (use EXTENDED flag) - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/describe</p>\r\n<p>KSQL REST API reference for executing statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>\r\n<p>Convert KSQL response to current API's response format and return result.</p>"
+      parameters:
+        - name: name
+          in: path
+          description: The Stream name.
+          required: true
+          schema:
+            type: string
+            description: The Stream name.
+            nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  /dataProcessing/tables:
+    get:
+      tags:
+        - DataProcessing
+      summary: Retrieves all Tables.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following KSQL Statement to retrieve all Tables - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/show-tables/</p>\r\n<p>KSQL REST API reference for executing statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>\r\n<p>Convert KSQL response to current API's response format and return result.</p>"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TableDetailsModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  '/dataProcessing/tables/{name}/schema':
+    get:
+      tags:
+        - DataProcessing
+      summary: Get the schema of the Table with the given name.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following KSQL Statement to get Table structure by it's name - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/describe</p>\r\n<p>KSQL REST API reference for executing statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>\r\n<p>Convert KSQL response to current API's response format and return result.</p>"
+      parameters:
+        - name: name
+          in: path
+          description: The Table name.
+          required: true
+          schema:
+            type: string
+            description: The Table name.
+            nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FieldDescriptionModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  '/dataProcessing/tables/{name}/stats':
+    get:
+      tags:
+        - DataProcessing
+      summary: Get the statistics of the Table with the given name.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Use following KSQL Statement to get Table statistics by it's name (use EXTENDED flag) - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/describe</p>\r\n<p>KSQL REST API reference for executing statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>\r\n<p>Convert KSQL response to current API's response format and return result.</p>"
+      parameters:
+        - name: name
+          in: path
+          description: The Table name.
+          required: true
+          schema:
+            type: string
+            description: The Table name.
+            nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '404':
+          description: NOT FOUND - if some entity with the given Id was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  /dataProcessing/ksql/statement:
+    post:
+      tags:
+        - DataProcessing
+      summary: Executes given KSQL statement.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Perform basic validation on backend, like checking for required config fields, etc.</p>\r\n<p>Execute KSQL statement using KSQL REST API for statements - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/ksql-endpoint</p>\r\n<p>Map the KSQL API response to response model of this API and return result.</p>"
+      requestBody:
+        description: The KSQL Statement details.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KsqlStatementModel'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/KsqlStatementModel'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/KsqlStatementModel'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatementBaseResponseModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+  /dataProcessing/ksql/query:
+    post:
+      tags:
+        - DataProcessing
+      summary: Executes given KSQL query.
+      description: "<p>\r\n  <b>Implementation Notes:</b>\r\n</p>\r\n<p>Perform basic validation on backend, like checking for required config fields, etc.</p>\r\n<p>Execute KSQL query using KSQL REST API for queries - https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-rest-api/query-endpoint</p>\r\n<p>Map the KSQL API response to response model of this API and return result.</p>"
+      requestBody:
+        description: The KSQL Query details.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KsqlQueryModel'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/KsqlQueryModel'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/KsqlQueryModel'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponseModel'
+        '400':
+          description: BAD REQUEST - if there was problem with the request (e.g. malformed or some parameters are missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+        '500':
+          description: 'INTERNAL SERVER ERROR - if the request was properly formatted, but the operation failed on the server side.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorModel'
+components:
+  schemas:
+    ApiErrorModel:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Gets or sets the message.
+          nullable: true
+      additionalProperties: false
+      description: An API error Model.
+    ConnectorStatus:
+      enum:
+        - Running
+        - Paused
+        - Failed
+      type: string
+      description: The connector status.
+    ConnectorConfigModel:
+      type: object
+      additionalProperties: false
+      description: 'The connector configuration properties, represented by object of key-value map.'
+    ConnectorDetailsModel:
+      required:
+        - config
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the connector to create.
+          example: Some JDBC source connector
+        status:
+          $ref: '#/components/schemas/ConnectorStatus'
+        config:
+          $ref: '#/components/schemas/ConnectorConfigModel'
+      additionalProperties: false
+      description: The Connector details model.
+    SortOrder:
+      enum:
+        - Asc
+        - Desc
+      type: string
+      description: The sort order for search operations.
+    ConnectorSummaryModel:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the connector to create.
+          example: Some JDBC source connector
+        status:
+          $ref: '#/components/schemas/ConnectorStatus'
+      additionalProperties: false
+      description: The Connector summary model.
+    ConnectorSummaryModelSearchResult:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          description: The total records count.
+          format: int32
+          example: 124
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectorSummaryModel'
+          description: The items.
+          nullable: true
+      additionalProperties: false
+      description: An model that represents search result.
+    ConnectorCreateModel:
+      required:
+        - config
+        - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the connector to create.
+          example: Some JDBC source connector
+        config:
+          $ref: '#/components/schemas/ConnectorConfigModel'
+      additionalProperties: false
+      description: The Connector Create model.
+    StringIListSearchResult:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          description: The total records count.
+          format: int32
+          example: 124
+        items:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+          description: The items.
+          nullable: true
+      additionalProperties: false
+      description: An model that represents search result.
+    ConfigPropertyValidationResultModel:
+      type: object
+      properties:
+        propertyName:
+          type: string
+          description: The config property name.
+          nullable: true
+          example: connector.class
+        propertyDescription:
+          type: string
+          description: The config property description.
+          nullable: true
+          example: Name or alias of the class for this connector.
+        propertyType:
+          type: string
+          description: The config property type.
+          nullable: true
+          example: STRING
+        isRequired:
+          type: boolean
+          description: The flag indicating whether this config property is required.
+          example: true
+        defaultValue:
+          type: string
+          description: The config property default value.
+          nullable: true
+          example: io.confluent.connect.jdbc.JdbcSourceConnector
+        errors:
+          type: array
+          items:
+            type: string
+          description: Gets or sets the errors.
+          nullable: true
+        recommendedValues:
+          type: array
+          items:
+            type: string
+          description: Gets or sets the recommended values.
+          nullable: true
+      additionalProperties: false
+      description: The plugin connector configuration property validation result.
+    PluginValidationResultModel:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The connector plugin name.
+          nullable: true
+          example: JdbcSourceConnector
+        errorCount:
+          type: integer
+          description: The number of errors.
+          format: int32
+          example: 2
+        configs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigPropertyValidationResultModel'
+          description: The validation result for configuration properties.
+          nullable: true
+      additionalProperties: false
+      description: The connector plugin configuration validation result model.
+    TemplateConfigProperty:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The config property name.
+          nullable: true
+          example: connector.class
+        description:
+          type: string
+          description: The config property description.
+          nullable: true
+          example: The connector class name.
+        isRequired:
+          type: boolean
+          description: The flag indicating whether this config property is required.
+          example: true
+        defaultValue:
+          type: string
+          description: The config property default value.
+          nullable: true
+          example: io.confluent.connect.jdbc.JdbcSourceConnector
+      additionalProperties: false
+      description: The Connector template configuration property details.
+    ConnectorTemplateModel:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The Id of the model.
+          format: int64
+          example: 1
+        title:
+          type: string
+          description: The connector template title.
+          nullable: true
+          example: JDBC source connector
+        connectorClassName:
+          type: string
+          description: The name of the connector class.
+          nullable: true
+          example: io.confluent.connect.jdbc.JdbcSourceConnector
+        configProps:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateConfigProperty'
+          description: The connector template configuration properties.
+          nullable: true
+      additionalProperties: false
+      description: The Connector template model.
+    ConnectorTemplateCreateModel:
+      required:
+        - configProps
+        - title
+      type: object
+      properties:
+        title:
+          type: string
+          description: The connector template title.
+          example: JDBC source connector
+        configProps:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateConfigProperty'
+          description: The connector template configuration properties.
+      additionalProperties: false
+      description: The Connector template Create/Update model.
+    ConnectorTemplateSearchItemModel:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The Id of the model.
+          format: int64
+          example: 1
+        title:
+          type: string
+          description: The connector template title.
+          nullable: true
+          example: JDBC source connector
+        connectorClassName:
+          type: string
+          description: The name of the connector class.
+          nullable: true
+          example: io.confluent.connect.jdbc.JdbcSourceConnector
+      additionalProperties: false
+      description: The Connector template search item model.
+    ConnectorTemplateSearchItemModelSearchResult:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          description: The total records count.
+          format: int32
+          example: 124
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectorTemplateSearchItemModel'
+          description: The items.
+          nullable: true
+      additionalProperties: false
+      description: An model that represents search result.
+    CreatedItemModel:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The Id of created item. For user registration it will be the Id of new user.
+          format: int64
+          example: 2
+      additionalProperties: false
+      description: 'This model contains response details for Create operations, including user Register operation.'
+    StreamDetailsModel:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The Stream name.
+          nullable: true
+        topic:
+          type: string
+          description: The Stream topic.
+          nullable: true
+        format:
+          type: string
+          description: The Stream format.
+          nullable: true
+      additionalProperties: false
+      description: The Stream details model.
+    FieldDescriptionModel:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The field name.
+          nullable: true
+        type:
+          type: string
+          description: The field type.
+          nullable: true
+      additionalProperties: false
+      description: The Table/Stream field desciprion model.
+    StatisticsModel:
+      type: object
+      properties:
+        totalMessagesCount:
+          type: integer
+          description: Total number of messages produced.
+          format: int32
+        totalMessagesBytes:
+          type: integer
+          description: Total number of bytes produced.
+          format: int64
+        messagesPerSec:
+          type: number
+          description: Number of messages produced per second.
+          format: double
+        lastFailed:
+          type: string
+          description: Time that the last failure occurred when a message was consumed from the topic by the server.
+          format: date-time
+          nullable: true
+        failedMessagesPerSec:
+          type: number
+          description: 'Number of failures during message consumption (for example, deserialization failures) per second on the server.'
+          format: double
+      additionalProperties: false
+      description: The Table/Stream statistics model.
+    TableDetailsModel:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The Stream name.
+          nullable: true
+        topic:
+          type: string
+          description: The Stream topic.
+          nullable: true
+        format:
+          type: string
+          description: The Stream format.
+          nullable: true
+        isWindowed:
+          type: boolean
+          description: 'true if the table provides windowed results; otherwise, false.'
+      additionalProperties: false
+      description: The Table details model.
+    KsqlStreamsPropertiesModel:
+      type: object
+      additionalProperties: false
+      description: 'The KSQL streams properties model, represented as object of key-value map.'
+    KsqlStatementModel:
+      required:
+        - ksql
+      type: object
+      properties:
+        ksql:
+          type: string
+          description: The KSQL statement.
+          example: CREATE STREAM pageviews_home AS SELECT * FROM pageviews_original WHERE pageid='home';
+        streamsProperties:
+          $ref: '#/components/schemas/KsqlStreamsPropertiesModel'
+        commandSequenceNumber:
+          type: integer
+          description: "If specified, the statements will not be run until all existing commands up to and including the specified sequence number have completed.\r\nIf unspecified, the statements are run immediately.\r\nWhen a command is processed, the result object contains its sequence number."
+          format: int64
+          nullable: true
+      additionalProperties: false
+      description: The KSQL Statement model.
+    StatementResponseWarningModel:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A message detailing the condition being warned on.
+          nullable: true
+      additionalProperties: false
+      description: The warning model for the KSQL stament response.
+    StatementBaseResponseModel:
+      type: object
+      properties:
+        statementText:
+          type: string
+          description: The SQL statement whose result is being returned.
+          nullable: true
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementResponseWarningModel'
+          description: 'A list of warnings about conditions that may be unexpected by the user, but don''t result in failure to execute the statement.'
+          nullable: true
+      additionalProperties: false
+      description: The base model for the KSQL stament response. Contains basic properties only - responses for various Statements will have additional properties.
+    KsqlQueryModel:
+      required:
+        - ksql
+      type: object
+      properties:
+        ksql:
+          type: string
+          description: The KSQL query.
+          example: SELECT * FROM USERS;
+        streamsProperties:
+          $ref: '#/components/schemas/KsqlStreamsPropertiesModel'
+      additionalProperties: false
+      description: The KSQL Query model.
+    QueryResponseRowModel:
+      type: object
+      properties:
+        columns:
+          type: array
+          items: {}
+          description: The column values.
+          nullable: true
+      additionalProperties: false
+      description: The KSQL query response row model.
+    QueryResponseModel:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryResponseRowModel'
+          description: The result rows.
+          nullable: true
+      additionalProperties: false
+      description: The model for the KSQL query response.
