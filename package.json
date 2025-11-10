@@ -1,0 +1,22 @@
+{  
+  "name": "nestjs-microservice-challenge",  
+  "version": "1.0.0",  
+  "private": true,  
+  "scripts": {  
+    "start:server": "ts-node -r tsconfig-paths/register src/main.server.ts",  
+    "start:client": "ts-node -r tsconfig-paths/register src/main.client.ts",  
+    "build": "tsc",  
+    "start": "node dist/main.js"  
+  },  
+  "dependencies": {  
+    "@nestjs/common": "^10.0.0",  
+    "@nestjs/core": "^10.0.0",  
+    "@nestjs/microservices": "^10.0.0",  
+    "rxjs": "^7.0.0"  
+  },  
+  "devDependencies": {  
+    "ts-node": "^10.0.0",  
+    "typescript": "^5.0.0",  
+    "tsconfig-paths": "^4.0.0"  
+  }  
+}
